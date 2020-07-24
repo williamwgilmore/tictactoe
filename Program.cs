@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TicTacToe
 {
@@ -99,7 +100,7 @@ namespace TicTacToe
         {
             // max of 8 moves for the first move of the game
             var moves = new List<(char position, int score, int depth)>();
-            var positions = new List<int>;
+            var positions = new List<int>();
 
             foreach (var position in board)
             {
@@ -109,58 +110,63 @@ namespace TicTacToe
                 }
             }
 
+            var maxScore = -9;
+            var bestPosition = -1;
             for (var i = 0; i < moves.Count; i++)
             {
-                int depth = 0;
-                var score = FindScore(moves[i].position, 'O', board, depth);
-                moves[i].score = score.score;
-                moves[i].depth = score.depth;
-            }
-
-            for (int i = 0; i < board.Length; i++)
-            {
-                if (board[i] != 'X' && board[i] != 'O')
+                var score = FindScore(moves[i].position, 'O', board);
+                if (score > maxScore)
                 {
-                    board[i] = 'O';
-                    break;
+                    bestPosition = i + 1;
                 }
             }
+
+            board[bestPosition] = 'O';
         }
 
         // Check for fastest win in every position, -1 is a loss, 1 is a win, 0 is a cats game
-        public static (int score, int depth) FindScore(char position, char letter, char[] board, int depth)
+
+        // Recursive down the tree
+        // Combine the result set - all possible values
+        // Changing the board
+        public static int FindScore(char position, char letter, char[] board)
         {
-            board[position] = letter;
+            // Not optimal
+            if (position == 'O' || position == 'X')
+            {
+                return 0;
+            }
+
+            int intPosition = position - '0' - 1;
+
+            board[intPosition] = letter;
             if (CheckForWin(board, letter))
             {
                 if (letter == 'O')
                 {
-                    return (1, depth);
+                    return 1;
                 }
                 else 
                 {
-                    return (-1, depth);
+                    return -1;
                 }
             }
             
             if (CheckForCatsGame(board))
             {
-                return (0, depth);
+                return 0;
             }
 
-            foreach (var nextPosition in board)
+            if (letter == 'O')
             {
-                if (letter == 'O')
-                {
-                    letter = 'X';
-                }
-                else
-                {
-                    letter = 'O';
-                }
-
-                FindScore(nextPosition, letter, board, depth++);
+                letter = 'X';
             }
+            else
+            {
+                letter = 'O';
+            }
+
+            return board.Sum(c => FindScore(c, letter, board));
         }
 
         public static bool CheckForWin(char[] board, char letter)
